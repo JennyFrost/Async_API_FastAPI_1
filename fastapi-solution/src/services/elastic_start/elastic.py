@@ -2,6 +2,7 @@
 
 from elasticsearch import Elasticsearch, helpers
 from log_pack import log_error, log_success
+from utils import backoff
 
 
 class ElasticMain:
@@ -11,6 +12,7 @@ class ElasticMain:
         self.dsl = f"http://{host}:{port}"
         self.client = self.elastic_client(self.dsl)
 
+    @backoff()
     @staticmethod
     def elastic_client(dsl: str) -> Elasticsearch:
         """Метод для подключения к elasticsearch"""
