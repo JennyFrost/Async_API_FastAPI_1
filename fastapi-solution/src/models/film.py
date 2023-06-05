@@ -1,5 +1,4 @@
 import orjson
-from uuid import UUID
 from datetime import date
 from typing import Optional
 from enum import Enum
@@ -18,12 +17,12 @@ class Role(Enum):
 
 
 class PersonBase(BaseModel):
-    uuid: UUID
-    full_name: str
+    id: str
+    name: str
 
 
 class PersonFilm(BaseModel):
-    uuid: UUID
+    uuid: str
     roles: Optional[list[Role]] = []
 
 
@@ -32,23 +31,23 @@ class Person(PersonBase):
 
 
 class Genre(BaseModel):
-    id: UUID#-----------------------------------------
+    id: str#-----------------------------------------
     name: str
 
 
 class FilmBase(BaseModel):
-    id:UUID
+    id: str
     title: str
     imdb_rating: float
 
 
-class Film(BaseModel):
+class Film(FilmBase):
     description: str
     creation_date: date
-    genre: Optional[list[Genre]] = []
+    # genre: Optional[list[Genre]] = []
     actors: Optional[list[PersonBase]] = []
     writers: Optional[list[PersonBase]] = []
-    directors: Optional[list[PersonBase]] = []
+    # directors: Optional[list[PersonBase]] = []
 
     class Config:
         json_loads = orjson.loads
