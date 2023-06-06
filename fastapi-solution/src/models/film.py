@@ -31,7 +31,7 @@ class Person(PersonBase):
 
 
 class Genre(BaseModel):
-    id: str#-----------------------------------------
+    id: str
     name: str
 
 
@@ -43,11 +43,11 @@ class FilmBase(BaseModel):
 
 class Film(FilmBase):
     description: str
-    creation_date: date
-    # genre: Optional[list[Genre]] = []
+    creation_date: Optional[date] = None
+    genre: Optional[list[Genre]] = []
     actors: Optional[list[PersonBase]] = []
     writers: Optional[list[PersonBase]] = []
-    # directors: Optional[list[PersonBase]] = []
+    directors: Optional[list[PersonBase]] = []
 
     class Config:
         json_loads = orjson.loads

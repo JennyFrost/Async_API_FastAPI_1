@@ -25,11 +25,11 @@ class Film(BaseModel):
     title: str
     imdb_rating: float
     description: str
-    creation_date: date
+    creation_date: Optional[date] = None
     actors: Optional[list[PersonBase]] = []
     writers: Optional[list[PersonBase]] = []
-    # directors: Optional[list[PersonBase]] = []
-    # genre: Optional[list[PersonBase]] = []
+    directors: Optional[list[PersonBase]] = []
+    genre: Optional[list[Genre]] = []
 
 @router.get('/{film_id}', response_model=Film)
 async def film_details(film_id: str, film_service: FilmService = Depends(get_film_service)) -> Film:
@@ -45,6 +45,6 @@ async def film_details(film_id: str, film_service: FilmService = Depends(get_fil
         creation_date=film.creation_date,
         actors=[PersonBase(full_name=i.name, uuid=i.id) for i in film.actors],
         writers=[PersonBase(full_name=i.name, uuid=i.id) for i in film.writers],
-        # directors=[PersonBase(full_name=i.name, uuid=i.id) for i in film.directors],
-        # genre=[Genre(name=i.name, uuid=i.id) for i in film.genre],
+        directors=[PersonBase(full_name=i.name, uuid=i.id) for i in film.directors],
+        genre=[Genre(name=i.name, uuid=i.id) for i in film.genre],
     )
