@@ -58,7 +58,7 @@ class ETLProcess:
         is_first_time = False
         if not cur_state_dict:
             is_first_time = True
-            time_to_start = datetime.now() - timedelta(days=365)
+            time_to_start = datetime.now() - timedelta(days=5000)
             time_to_start = time_to_start.strftime("%Y-%m-%d %H:%M:%S")
         else:
             if 'last_date' in cur_state_dict:

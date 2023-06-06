@@ -11,3 +11,21 @@ services:
       - ./movies_db.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - 5438:5432
+  etl_genre:
+    build: ./etl_genres
+    env_file:
+      - ./etl_genres/.env.docker
+  etl_person:
+    build: ./etl_persons
+    env_file:
+      - ./etl_persons/.env.etl
+  elastic:
+      image: elasticsearch:8.6.2
+      container_name: elasticsearch
+      restart: always
+      environment:
+        xpack.security.enabled: 'false'
+        ES_JAVA_OPTS: -Xms600m -Xmx600m
+        discovery.type: single-node
+      ports:
+      - 9200:9200
