@@ -11,14 +11,17 @@ services:
       - ./movies_db.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - 5438:5432
+
   etl_genre:
     build: ./etl_genres
     env_file:
       - ./etl_genres/.env.docker
+
   etl_person:
     build: ./etl_persons
     env_file:
       - ./etl_persons/.env.etl
+
   elastic:
     image: elasticsearch:8.6.2
     container_name: elasticsearch
@@ -32,7 +35,7 @@ services:
 
   elastic_start:
       build: ./src/services/elastic_start
-      container_name: postgres_to_es
+      container_name: elastic_start
       depends_on:
         - elastic
       env_file:
