@@ -11,3 +11,14 @@ services:
       discovery.type: single-node
     ports:
     - 9200:9200
+
+  elastic_start:
+      build: ./src/services/elastic_start
+      container_name: postgres_to_es
+      depends_on:
+        - elastic
+      env_file:
+        - ./.env
+      volumes:
+        - ./index.json:/usr/src/app/index.json
+        - ./dump_elastic.json:/usr/src/app/dump_elastic.json
