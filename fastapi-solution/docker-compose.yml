@@ -14,11 +14,13 @@ services:
 
   etl_genre:
     build: ./etl_genres
+    restart: always
     env_file:
       - ./etl_genres/.env.docker
 
   etl_person:
     build: ./etl_persons
+    restart: always
     env_file:
       - ./etl_persons/.env.etl
 
