@@ -7,13 +7,9 @@ from pydantic import BaseModel
 
 from services.film import FilmService, get_film_service
 from .genres import Genre
+from .persons import PersonBase
 
 router = APIRouter()
-
-
-class PersonBase(BaseModel):
-    uuid: str
-    full_name: str
 
 
 class Film(BaseModel):
@@ -42,6 +38,6 @@ async def film_details(film_id: str, film_service: FilmService = Depends(get_fil
         creation_date=film.creation_date,
         actors=[PersonBase(full_name=i.name, uuid=i.id) for i in film.actors],
         writers=[PersonBase(full_name=i.name, uuid=i.id) for i in film.writers],
-        directors=[PersonBase(full_name=i.name, uuid=i.id) for i in film.directors],
+        directors=[PersonBase(full_name=i.name, uuid=i.id) for i in film.director],
         genre=[Genre(name=i.name, uuid=i.id) for i in film.genre],
     )
