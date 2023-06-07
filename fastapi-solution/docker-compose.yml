@@ -35,7 +35,7 @@ services:
       ES_JAVA_OPTS: -Xms600m -Xmx600m
       discovery.type: single-node
     ports:
-    - 9200:9200
+      - 9200:9200
 
   redis:
     image: redis:6.2-alpine
@@ -43,9 +43,6 @@ services:
     restart: always
     ports:
       - 6379:6379
-    command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
-    # volumes: 
-    #   - cache:/data
 
   elastic_start:
       build: ./src/services/elastic_start
