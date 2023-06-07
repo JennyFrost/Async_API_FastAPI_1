@@ -6,13 +6,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from services.film import FilmService, get_film_service
+from .genres import Genre
 
 router = APIRouter()
-
-
-class Genre(BaseModel):
-    uuid: str
-    name: str
 
 
 class PersonBase(BaseModel):
@@ -30,6 +26,7 @@ class Film(BaseModel):
     writers: Optional[list[PersonBase]] = []
     directors: Optional[list[PersonBase]] = []
     genre: Optional[list[Genre]] = []
+
 
 @router.get('/{film_id}', response_model=Film)
 async def film_details(film_id: str, film_service: FilmService = Depends(get_film_service)) -> Film:

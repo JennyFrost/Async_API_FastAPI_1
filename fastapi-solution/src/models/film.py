@@ -5,6 +5,8 @@ from enum import Enum
 
 from pydantic import BaseModel
 
+from .genre import Genre
+
 
 def orjson_dumps(v, *, default):
     return orjson.dumps(v, default=default).decode()
