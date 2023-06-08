@@ -16,3 +16,14 @@ async def person_details(person_id: str, person_service: PersonService = Depends
     if not person:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='person not found')
     return Person(uuid=person.uuid, full_name=person.full_name, films=person.films)
+
+
+@router.get('/{person_id}/films', response_model=list[FilmBase])
+async def person_films(person_id: str, film_service: FilmService = Depends(get_film_service)) -> list[FilmBase]:
+    """получить список фильмов по конкретному персонажу"""
+    person_films = await film_service.get_person_films(person_id)
+    return [FilmBase(
+        uuid=film.id,
+        title=film.title,
+        imdb_rating=film.imdb_rating
+    ) for film in person_films]
