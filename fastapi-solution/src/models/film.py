@@ -24,6 +24,10 @@ class FilmBase(BaseModel):
     title: str
     imdb_rating: float
 
+    class Config:
+        json_loads = orjson.loads
+        json_dumps = orjson_dumps
+
 
 class Film(FilmBase):
     description: str
@@ -32,8 +36,4 @@ class Film(FilmBase):
     actors: Optional[list[PersonBase]] = []
     writers: Optional[list[PersonBase]] = []
     director: Optional[list[PersonBase]] = []
-
-    class Config:
-        json_loads = orjson.loads
-        json_dumps = orjson_dumps
 
