@@ -1,27 +1,13 @@
 from http import HTTPStatus
-from typing import Optional
-from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
 
 from services.film import FilmService, get_film_service
-from .genres import Genre
-from .persons import PersonBase
+from .api_models import Film
+from .api_models import Genre
+from .api_models import PersonBase
 
 router = APIRouter()
-
-
-class Film(BaseModel):
-    uuid: str
-    title: str
-    imdb_rating: float
-    description: str
-    creation_date: Optional[date] = None
-    actors: Optional[list[PersonBase]] = []
-    writers: Optional[list[PersonBase]] = []
-    directors: Optional[list[PersonBase]] = []
-    genre: Optional[list[Genre]] = []
 
 
 @router.get('/{film_id}', response_model=Film)

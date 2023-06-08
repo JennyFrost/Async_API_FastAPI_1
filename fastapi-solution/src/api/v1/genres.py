@@ -1,16 +1,11 @@
 from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
 
 from services.genre import GenreService, get_genres_service
+from .api_models import Genre
 
 router = APIRouter()
-
-
-class Genre(BaseModel):
-    uuid: str
-    name: str
 
 
 @router.get('/', response_model=list[Genre])

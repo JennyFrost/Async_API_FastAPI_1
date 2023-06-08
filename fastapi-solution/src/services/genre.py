@@ -23,13 +23,13 @@ class GenreService:
         if not genres:
             genres = await self._get_genres_from_elastic()
             if not genres:
-                return None
+                return []
             await self._put_genres_to_cache(genres)
         return genres
 
     async def _get_genres_from_elastic(self) -> Optional[list[Genre]]:
         try:
-            genres = await self.elastic.search(index='genres', body={"query":{"match_all": {}}})
+            genres = await self.elastic.search(index='genres', body={"query": {"match_all": {}}})
         except NotFoundError:
             return None
         return [Genre(**genre['_source']) for genre in genres['hits']['hits']]

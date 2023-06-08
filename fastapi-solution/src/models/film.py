@@ -36,4 +36,3 @@ class Film(FilmBase):
     actors: Optional[list[PersonBase]] = []
     writers: Optional[list[PersonBase]] = []
     director: Optional[list[PersonBase]] = []
-
