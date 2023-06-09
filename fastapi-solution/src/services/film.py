@@ -5,38 +5,37 @@ from typing import Optional
 from elasticsearch import AsyncElasticsearch, NotFoundError
 from fastapi import Depends
 from redis.asyncio import Redis
+from pydantic import BaseModel
 
 from db.elastic import get_elastic
 from db.redis import get_redis
+
 from models.film import Film, FilmBase
+from services.redis_mixins import CacheMixin
+
 
 FILM_CACHE_EXPIRE_IN_SECONDS = 60 * 5
 
-class MainService:
-    def __init__(self, redis: Redis, elastic: AsyncElasticsearch):
-        self.redis = redis
-        self.elastic = elastic
 
-
-class FilmService(MainService):
+class FilmService(CacheMixin):
 
     async def get_by_id(self, film_id: str) -> Optional[Film]:
-        film = await self._film_from_cache(film_id)
+        film = await self._object_from_cache(film_id)
         if not film:
             film = await self._get_film_from_elastic(film_id)
             if not film:
                 return None
-            await self._put_film_to_cache(film)
+            await self._put_object_to_cache(film, film_id)
 
         return film
 
     async def get_person_films(self, person_id: str) -> Optional[list[FilmBase]]:
-        person_films = await self._person_films_from_cache(person_id)
+        person_films = await self._objects_from_cache('person_films_' + person_id)
         if not person_films:
             person_films = await self._get_person_films_from_elastic(person_id)
             if not person_films:
                 return []
-            await self._put_person_films_to_cache(person_films, person_id)
+            await self._put_objects_to_cache(person_films, 'person_films_' + person_id)
         return person_films
 
     async def _get_film_from_elastic(self, film_id: str) -> Optional[Film]:
@@ -99,29 +98,24 @@ class FilmService(MainService):
         films = [FilmBase(**film['_source']) for film in films['hits']['hits']]
         return films
 
-    async def _film_from_cache(self, film_id: str) -> Optional[Film]:
-        data = await self.redis.get(film_id)
-        if not data:
-            return None
-
-        film = Film.parse_raw(data)
-        return film
-
-    async def _person_films_from_cache(self, person_id: str) -> Optional[list[FilmBase]]:
-        data = await self.redis.get('person_films_' + person_id)
-        if not data:
-            return None
-        films = json.loads(data)
-        films = [FilmBase.parse_raw(film) for film in films]
+    async def _object_from_cache(self, some_id: str) -> Optional[str]:
+        object = await super()._object_from_cache(some_id)
+        if object:
+            film = FilmBase.parse_raw(object)
+            return film
+    
+    async def _objects_from_cache(self, some_id: str) -> Optional[dict]:
+        objects = await super()._objects_from_cache(some_id)
+        films = [FilmBase.parse_raw(object) for object in objects]
         return films
-
-    async def _put_film_to_cache(self, film: Film):
-        await self.redis.set(film.id, film.json(), FILM_CACHE_EXPIRE_IN_SECONDS)
-
-    async def _put_person_films_to_cache(self, films: list[FilmBase], person_id: str):
-        films = [film.json() for film in films]
-        films = json.dumps(films)
-        await self.redis.set('person_films_' + person_id, films, FILM_CACHE_EXPIRE_IN_SECONDS)
+    
+    # async def _genres_from_cache(self, some_id: str) -> Optional[list[Genre]]:
+    #     data = await self.redis.get(some_id)
+    #     if not data:
+    #         return None
+    #     objects = json.loads(data)
+    #     genres = [Genre.parse_raw(genre) for genre in genres]
+    #     return genres
 
 
 @lru_cache()

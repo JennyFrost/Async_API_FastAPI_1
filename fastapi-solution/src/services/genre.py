@@ -10,21 +10,21 @@ from db.elastic import get_elastic
 from db.redis import get_redis
 from models.genre import Genre
 
+from services.redis_mixins import CacheMixin
+
+
 GENRES_CACHE_EXPIRE_IN_SECONDS = 60 * 5
 
 
-class GenreService:
-    def __init__(self, redis: Redis, elastic: AsyncElasticsearch):
-        self.redis = redis
-        self.elastic = elastic
+class GenreService(CacheMixin):
 
     async def get_genres_list(self) -> Optional[list[Genre]]:
-        genres = await self._genres_from_cache()
+        genres = await self._objects_from_cache('all_genres')
         if not genres:
             genres = await self._get_genres_from_elastic()
             if not genres:
                 return []
-            await self._put_genres_to_cache(genres)
+            await self._put_objects_to_cache(genres, 'all_genres')
         return genres
 
     async def _get_genres_from_elastic(self) -> Optional[list[Genre]]:
@@ -33,19 +33,16 @@ class GenreService:
         except NotFoundError:
             return None
         return [Genre(**genre['_source']) for genre in genres['hits']['hits']]
-
-    async def _genres_from_cache(self) -> Optional[list[Genre]]:
-        data = await self.redis.get('all_genres')
-        if not data:
-            return None
-        genres = json.loads(data)
-        genres = [Genre.parse_raw(genre) for genre in genres]
+    
+    async def _objects_from_cache(self, some_id: str) -> Optional[dict]:
+        objects = await super()._objects_from_cache(some_id)
+        genres = [Genre.parse_raw(object) for object in objects]
         return genres
-
-    async def _put_genres_to_cache(self, genres: list[Genre]):
-        genres = [genre.json() for genre in genres]
-        genres = json.dumps(genres)
-        await self.redis.set('all_genres', genres, GENRES_CACHE_EXPIRE_IN_SECONDS)
+    
+    async def _object_from_cache(self, some_id: str) -> Optional[str]:
+        object = await super()._object_from_cache(some_id)
+        genre = Genre.parse_raw(object)
+        return genre
 
 
 @lru_cache()
