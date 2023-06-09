@@ -12,11 +12,13 @@ from models.film import Film, FilmBase
 
 FILM_CACHE_EXPIRE_IN_SECONDS = 60 * 5
 
-
-class FilmService:
+class MainService:
     def __init__(self, redis: Redis, elastic: AsyncElasticsearch):
         self.redis = redis
         self.elastic = elastic
+
+
+class FilmService(MainService):
 
     async def get_by_id(self, film_id: str) -> Optional[Film]:
         film = await self._film_from_cache(film_id)

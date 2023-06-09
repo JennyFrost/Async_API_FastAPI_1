@@ -3,9 +3,10 @@ from http import HTTPStatus
 from fastapi import APIRouter, Depends, HTTPException
 
 from services.film import FilmService, get_film_service
-from .api_models import Film
-from .api_models import Genre
-from .api_models import PersonBase
+
+from .api_models import Film, Genre, PersonBase, FilmBase as FilmAnswer
+
+from models.film import FilmBase
 
 router = APIRouter()
 
@@ -27,3 +28,7 @@ async def film_details(film_id: str, film_service: FilmService = Depends(get_fil
         directors=[PersonBase(full_name=i.name, uuid=i.id) for i in film.director],
         genre=[Genre(name=i.name, uuid=i.id) for i in film.genre],
     )
+
+# @router.get('/', response_model=list[FilmAnswer])
+# async def all_films(size: int=40, func: some_func = ) -> list[FilmAnswer]:
+
