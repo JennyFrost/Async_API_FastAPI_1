@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from services.film import FilmService, get_film_service
 
-from .api_models import Film, Genre, PersonBase, FilmBase as FilmAnswer
+from .api_models import Film, Genre, PersonBase, PageAnswer, FilmBase as FilmAnswer
 
 from models.film import FilmBase
 
@@ -29,6 +29,14 @@ async def film_details(film_id: str, film_service: FilmService = Depends(get_fil
         genre=[Genre(name=i.name, uuid=i.id) for i in film.genre],
     )
 
-# @router.get('/', response_model=list[FilmAnswer])
-# async def all_films(size: int=40, func: some_func = ) -> list[FilmAnswer]:
-
+@router.get('/', response_model=PageAnswer)
+async def all_films(page: int, size: int=50, film_service: FilmService=Depends(get_film_service)) -> PageAnswer:
+    # получаем список фильмов с определенного места определенного размера
+    films: list[FilmBase] = await film_service.get_films_page(page, size)
+    page_model = PageAnswer(
+        page_size=size,
+        number_page=page,
+        amount_elements=len(films),
+        result=[FilmAnswer.parse_obj(film_obj.dict()) for film_obj in films]
+    )
+    return page_model
