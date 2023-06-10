@@ -1,3 +1,4 @@
+import re
 from functools import lru_cache
 from typing import Optional
 
@@ -8,12 +9,24 @@ from redis.asyncio import Redis
 from db.elastic import get_elastic
 from db.redis import get_redis
 from models.person import Role, Person, PersonFilm
-from services.redis_mixins import CacheMixin
+from services.redis_mixins import CacheMixin, Paginator
 
 PERSON_CACHE_EXPIRE_IN_SECONDS = 60 * 2
 
 
 class PersonService(CacheMixin):
+
+    async def search_person(
+            self, search_text: str,
+            page: int, page_size: int) -> Optional[list[Person]]:
+        persons = await self._objects_from_cache('search_person_' + search_text)
+        if not persons:
+            text = re.sub(' +', '~ ', search_text).rstrip() + '~'
+            persons = await self._search_person_from_elastic(text, page, page_size)
+            if not persons:
+                return []
+            await self._put_objects_to_cache(persons, 'search_person_' + search_text)
+        return persons
 
     async def get_by_id(self, person_id: str) -> Optional[Person]:
         person = await self._object_from_cache(person_id)
@@ -27,65 +40,91 @@ class PersonService(CacheMixin):
     async def _get_person_from_elastic(self, person_id: str) -> Optional[Person]:
         try:
             doc = await self.elastic.get(index='persons', id=person_id)
-            films = await self.elastic.search(
-                index='movies',
-                body={
-                 "_source": ["id"],
-                 "query": {
-                   "bool": {
-                     "should": [
-                       {
-                         "nested": {
-                           "path": "actors",
-                           "query": {
-                             "term": {
-                               "actors.id": doc['_source']['uuid']
-                             }
-                           },
-                           "inner_hits": {}
-                         }
-                       },
-                         {
-                             "nested": {
-                                 "path": "director",
-                                 "query": {
-                                     "term": {
-                                         "director.id": doc['_source']['uuid']
-                                     }
-                                 },
-                                 "inner_hits": {}
-                             }
-                         },
-                       {
-                         "nested": {
-                           "path": "writers",
-                           "query": {
-                             "term": {
-                               "writers.id": doc['_source']['uuid']
-                             }
-                           },
-                           "inner_hits": {}
-                         }
-                       }
-                     ]
-                   }
-                 }
-                }
-            )
             person = Person(**doc['_source'])
-            for film in films['hits']['hits']:
-                film_id = film['_source']['id']
-                person_film = PersonFilm(uuid=film_id)
-                if film['inner_hits']['actors']['hits']['total']['value'] == 1:
-                    person_film.roles.append(Role.actor)
-                if film['inner_hits']['writers']['hits']['total']['value'] == 1:
-                    person_film.roles.append(Role.writer)
-                if film['inner_hits']['director']['hits']['total']['value'] == 1:
-                    person_film.roles.append(Role.director)
-                person.films.append(person_film)
-
+            person = await self._get_person_roles_from_elastic(person)
         except NotFoundError:
             return None
+        return person
+
+    async def _search_person_from_elastic(
+            self, search_text: str,
+            page: int, page_size: int) -> Optional[list[Person]]:
+        search_body = {
+                "query": {
+                    "query_string": {
+                        "default_field": "full_name",
+                        "query": search_text
+                    }
+                }
+            }
+        search_body.update(Paginator(page_size=page_size, page_number=page).get_paginate_body())
+        persons = await self.elastic.search(
+            index='persons',
+            body=search_body
+        )
+        result = []
+        for person in persons['hits']['hits']:
+            person = Person(**person['_source'])
+            person = await self._get_person_roles_from_elastic(person)
+            result.append(person)
+        return result
+
+    async def _get_person_roles_from_elastic(self, person: Person) -> Optional[Person]:
+        films = await self.elastic.search(
+            index='movies',
+            body={
+                "_source": ["id"],
+                "query": {
+                    "bool": {
+                        "should": [
+                            {
+                                "nested": {
+                                    "path": "actors",
+                                    "query": {
+                                        "term": {
+                                            "actors.id": person.uuid
+                                        }
+                                    },
+                                    "inner_hits": {}
+                                }
+                            },
+                            {
+                                "nested": {
+                                    "path": "director",
+                                    "query": {
+                                        "term": {
+                                            "director.id": person.uuid
+                                        }
+                                    },
+                                    "inner_hits": {}
+                                }
+                            },
+                            {
+                                "nested": {
+                                    "path": "writers",
+                                    "query": {
+                                        "term": {
+                                            "writers.id": person.uuid
+                                        }
+                                    },
+                                    "inner_hits": {}
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        )
+        for film in films['hits']['hits']:
+            film_id = film['_source']['id']
+            person_film = PersonFilm(uuid=film_id)
+            if film['inner_hits']['actors']['hits']['total']['value'] == 1:
+                person_film.roles.append(Role.actor)
+            if film['inner_hits']['writers']['hits']['total']['value'] == 1:
+                person_film.roles.append(Role.writer)
+            if film['inner_hits']['director']['hits']['total']['value'] == 1:
+                person_film.roles.append(Role.director)
+            person.films.append(person_film)
         return person
 
     async def _object_from_cache(self, some_id: str) -> Optional[Person]:
@@ -93,6 +132,11 @@ class PersonService(CacheMixin):
         if obj:
             person = Person.parse_raw(obj)
             return person
+
+    async def _objects_from_cache(self, some_id: str) -> Optional[list[Person]]:
+        objects = await super()._objects_from_cache(some_id)
+        persons = [Person.parse_raw(obj) for obj in objects]
+        return persons
 
 
 @lru_cache()

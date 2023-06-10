@@ -9,7 +9,7 @@ from db.elastic import get_elastic
 from db.redis import get_redis
 
 from models.film import Film, FilmBase
-from services.redis_mixins import CacheMixin
+from services.redis_mixins import CacheMixin, Paginator
 
 
 FILM_CACHE_EXPIRE_IN_SECONDS = 60 * 5
@@ -27,13 +27,20 @@ class FilmService(CacheMixin):
 
         return film
 
-    async def get_person_films(self, person_id: str) -> Optional[list[FilmBase]]:
-        person_films = await self._objects_from_cache('person_films_' + person_id)
+    async def get_person_films(
+            self, person_id: str,
+            page_size: int,
+            page_number: int) -> Optional[list[FilmBase]]:
+        person_films = await self._objects_from_cache(
+            f'person_films_page_{page_number}_size_{page_size}_' + person_id
+        )
         if not person_films:
-            person_films = await self._get_person_films_from_elastic(person_id)
+            person_films = await self._get_person_films_from_elastic(person_id, page_number, page_size)
             if not person_films:
                 return []
-            await self._put_objects_to_cache(person_films, 'person_films_' + person_id)
+            await self._put_objects_to_cache(
+                person_films,
+                f'person_films_page_{page_number}_size_{page_size}_' + person_id)
         return person_films
 
     async def _get_film_from_elastic(self, film_id: str) -> Optional[Film]:
@@ -43,10 +50,10 @@ class FilmService(CacheMixin):
             return None
         return Film(**doc['_source'])
 
-    async def _get_person_films_from_elastic(self, person_id: str) -> Optional[list[FilmBase]]:
-        films = await self.elastic.search(
-            index='movies',
-            body={
+    async def _get_person_films_from_elastic(
+            self, person_id: str,
+            page: int, page_size: int) -> Optional[list[FilmBase]]:
+        search_body = {
                 "_source": [
                     "id",
                     "title",
@@ -96,6 +103,10 @@ class FilmService(CacheMixin):
                     }
                 ]
             }
+        search_body.update(Paginator(page_size=page_size, page_number=page).get_paginate_body())
+        films = await self.elastic.search(
+            index='movies',
+            body=search_body
         )
         films = [FilmBase(**film['_source']) for film in films['hits']['hits']]
         return films

@@ -34,3 +34,18 @@ class CacheMixin(MainServiceMixin):
         objects = [obj.json() for obj in objects]
         objects = json.dumps(objects)
         await self.redis.set(some_id, objects, time_cache)
+
+
+class Paginator(BaseModel):
+    page_number: int
+    page_size: int
+
+    def get_paginate_body(self) -> dict:
+        start_number = (self.page_number - 1) * self.page_size
+        start_number = start_number if start_number > 0 else 0
+        paginator_body = {
+            "from": start_number,
+            "size": self.page_size
+        }
+        return paginator_body
+
