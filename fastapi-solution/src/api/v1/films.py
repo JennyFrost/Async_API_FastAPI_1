@@ -15,6 +15,21 @@ from core.config import PAGE_SIZE, SORT_FIELD
 router = APIRouter()
 
 
+@router.get('/search', response_model=PageAnswer)
+async def query_films(query: str, page: int=1, size: int=PAGE_SIZE, film_service: FilmService=Depends(get_film_service)) -> PageAnswer:
+    """
+    Метод получает список фильмов по запросу
+    """
+    films: list[FilmBase] = await film_service.get_films_query(page, size, query)
+    page_model = PageAnswer(
+        page_size=size,
+        number_page=page,
+        amount_elements=len(films),
+        result=[FilmAnswer.parse_obj(film_obj.dict()) for film_obj in films]
+    )
+    return page_model
+
+
 @router.get('/{film_id}', response_model=Film)
 async def film_details(film_id: str, film_service: FilmService = Depends(get_film_service)) -> Film:
     film = await film_service.get_by_id(film_id)

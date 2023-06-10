@@ -1,3 +1,4 @@
+import re
 from functools import lru_cache
 from typing import Optional
 
@@ -23,8 +24,39 @@ class FilmService(CacheMixin):
             if not film:
                 return None
             await self._put_object_to_cache(film, film_id)
-
         return film
+    
+    async def get_films_query(self, page: int, page_size: int, query: str) -> Optional[list[FilmBase]]:
+        key_for_cache = f"films_page_{page}_size_{page_size}_query_{query}"
+        films = await self._objects_from_cache(key_for_cache)
+        if not films:
+            text = re.sub(' +', '~ ', query.rstrip()).rstrip() + '~'
+            films = await self._search_films_from_elastic(text, page, page_size)
+            if not films:
+                return []
+            await self._put_objects_to_cache(films, key_for_cache)
+        return films
+    
+    async def _search_films_from_elastic(self, search_text: str, page: int, page_size: int):
+        search_body = {
+                "_source": [
+                    "id",
+                    "title",
+                    "imdb_rating"],
+                "query": {
+                    "query_string": {
+                        "default_field": "title",
+                        "query": search_text
+                    }
+                }
+            }
+        search_body.update(Paginator(page_size=page_size, page_number=page).get_paginate_body())
+        films: dict = await self.elastic.search(
+            index='movies',
+            body=search_body
+        )
+        objects_film = [FilmBase.parse_obj(film.get('_source')) for film in films['hits']['hits']]
+        return objects_film
     
     async def get_films_page(self, page: int, size: int, sort_field: str, genre: str):
         """

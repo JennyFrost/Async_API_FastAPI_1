@@ -21,7 +21,7 @@ class PersonService(CacheMixin):
             page: int, page_size: int) -> Optional[list[Person]]:
         persons = await self._objects_from_cache('search_person_' + search_text)
         if not persons:
-            text = re.sub(' +', '~ ', search_text).rstrip() + '~'
+            text = re.sub(' +', '~ ', search_text.rstrip()).rstrip() + '~'
             persons = await self._search_person_from_elastic(text, page, page_size)
             if not persons:
                 return []
