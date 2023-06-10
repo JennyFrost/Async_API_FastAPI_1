@@ -27,7 +27,23 @@ class Genre(BaseModel):
 class FilmBase(BaseModel):
     uuid: str
     title: str
-    imdb_rating: float
+    imdb_rating: Optional[float]
+
+    @classmethod
+    def parse_obj(cls, obj: dict):
+        obj = {
+            "uuid": obj.get("id"),
+            "title": obj.get("title"),
+            "imdb_rating": obj.get("imdb_rating")
+        }
+        return super().parse_obj(obj)
+
+
+class PageAnswer(BaseModel):
+    page_size: int
+    number_page: int
+    amount_elements: int 
+    result: Optional[list[FilmBase]] = []
 
 
 class Film(FilmBase):
@@ -37,9 +53,3 @@ class Film(FilmBase):
     writers: Optional[list[PersonBase]] = []
     directors: Optional[list[PersonBase]] = []
     genre: Optional[list[Genre]] = []
-
-
-class FilmBase(BaseModel):
-    uuid: str
-    title: str
-    imdb_rating: float

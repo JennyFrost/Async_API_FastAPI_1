@@ -25,6 +25,40 @@ class FilmService(CacheMixin):
             await self._put_object_to_cache(film, film_id)
 
         return film
+    
+    async def get_films_page(self, page: int, size: int):
+        """
+        Метод возвращает запрошенную страницу с фильмами, определенного размера
+        """
+        key_for_cache = f"films_page_{page}_size_{size}"
+        page_films = await self._objects_from_cache(key_for_cache)
+        if not page_films:
+            page_films = await self._get_films_from_elastic(page, size)
+            if not page_films:
+                return []
+            await self._put_objects_to_cache(page_films, key_for_cache)
+        return page_films
+    
+    async def _get_films_from_elastic(self, page: int, size: int) -> Optional[list[FilmBase]]:
+        """
+        Метод делает запрос в эластик и возвращает страницу (список объектов) с фильмами
+        """
+        search_body = {"_source": [
+                    "id",
+                    "title",
+                    "imdb_rating"], 
+                    "query": {"match_all": {}},
+                    "sort": [
+                        {
+                        "imdb_rating": {
+                            "order": "desc"
+                        }
+                        }]
+                }
+        search_body.update(Paginator(page_size=size, page_number=page).get_paginate_body())
+        films = await self.elastic.search(index='movies', body=search_body)
+        objects_film = [FilmBase.parse_obj(film.get('_source')) for film in films['hits']['hits']]
+        return objects_film
 
     async def get_person_films(
             self, person_id: str,

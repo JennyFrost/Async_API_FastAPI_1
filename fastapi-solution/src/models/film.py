@@ -22,7 +22,7 @@ class Genre(BaseModel):
 class FilmBase(BaseModel):
     id: str
     title: str
-    imdb_rating: float
+    imdb_rating: Optional[float]
 
     class Config:
         json_loads = orjson.loads
