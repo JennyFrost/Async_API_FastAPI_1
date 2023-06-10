@@ -9,26 +9,44 @@ from db.elastic import get_elastic
 from db.redis import get_redis
 from models.genre import Genre
 
-from services.redis_mixins import CacheMixin
-
+from services.redis_mixins import CacheMixin, Paginator
 
 GENRES_CACHE_EXPIRE_IN_SECONDS = 60 * 5
 
 
 class GenreService(CacheMixin):
 
-    async def get_genres_list(self) -> Optional[list[Genre]]:
-        genres = await self._objects_from_cache('all_genres')
+    async def get_by_id(self, genre_id: str) -> Optional[Genre]:
+        genre = await self._object_from_cache(genre_id)
+        if not genre:
+            genre = await self._get_genre_from_elastic(genre_id)
+            if not genre:
+                return None
+            await self._put_object_to_cache(genre, genre_id)
+
+        return genre
+
+    async def get_genres_list(self, page: int, page_size: int) -> Optional[list[Genre]]:
+        genres = await self._objects_from_cache(f'all_genres_page_{page}_size_{page_size}')
         if not genres:
-            genres = await self._get_genres_from_elastic()
+            genres = await self._get_genres_from_elastic(page, page_size)
             if not genres:
                 return []
-            await self._put_objects_to_cache(genres, 'all_genres')
+            await self._put_objects_to_cache(genres, f'all_genres_page_{page}_size_{page_size}')
         return genres
 
-    async def _get_genres_from_elastic(self) -> Optional[list[Genre]]:
+    async def _get_genre_from_elastic(self, genre_id: str) -> Optional[Genre]:
         try:
-            genres = await self.elastic.search(index='genres', body={"query": {"match_all": {}}})
+            doc = await self.elastic.get(index='genres', id=genre_id)
+        except NotFoundError:
+            return None
+        return Genre(**doc['_source'])
+
+    async def _get_genres_from_elastic(self, page: int, page_size: int) -> Optional[list[Genre]]:
+        try:
+            search_body = {"query": {"match_all": {}}}
+            search_body.update(Paginator(page_size=page_size, page_number=page).get_paginate_body())
+            genres = await self.elastic.search(index='genres', body=search_body)
         except NotFoundError:
             return None
         return [Genre(**genre['_source']) for genre in genres['hits']['hits']]

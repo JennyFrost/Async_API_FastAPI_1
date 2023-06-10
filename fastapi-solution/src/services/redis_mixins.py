@@ -49,3 +49,25 @@ class Paginator(BaseModel):
         }
         return paginator_body
 
+
+class Sort(BaseModel):
+    sort_field: str
+    order: str = "asc"
+
+    def get_sort_body(self) -> dict:
+        if self.sort_field[0] == '-':
+            self.order = "desc"
+            self.sort_field = self.sort_field[1:]
+        sort_body = {
+            "sort": [
+                    {
+                        self.sort_field: {
+                            "order": self.order
+                        }
+                    }
+                    ]
+        }
+        return sort_body
+
+
+

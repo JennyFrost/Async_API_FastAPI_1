@@ -9,8 +9,7 @@ from db.elastic import get_elastic
 from db.redis import get_redis
 
 from models.film import Film, FilmBase
-from services.redis_mixins import CacheMixin, Paginator
-
+from services.redis_mixins import CacheMixin, Paginator, Sort
 
 FILM_CACHE_EXPIRE_IN_SECONDS = 60 * 5
 
@@ -52,7 +51,7 @@ class FilmService(CacheMixin):
 
     async def _get_person_films_from_elastic(
             self, person_id: str,
-            page: int, page_size: int) -> Optional[list[FilmBase]]:
+            page: int, page_size: int, sort_field: str = "imdb_rating") -> Optional[list[FilmBase]]:
         search_body = {
                 "_source": [
                     "id",
@@ -94,16 +93,45 @@ class FilmService(CacheMixin):
                             }
                         ]
                     }
-                },
-                "sort": [
-                    {
-                        "imdb_rating": {
-                            "order": "desc"
-                        }
-                    }
-                ]
+                }
             }
         search_body.update(Paginator(page_size=page_size, page_number=page).get_paginate_body())
+        search_body.update(Sort(field=sort_field).get_sort_body())
+        films = await self.elastic.search(
+            index='movies',
+            body=search_body
+        )
+        films = [FilmBase(**film['_source']) for film in films['hits']['hits']]
+        return films
+
+    async def _get_genre_films_from_elastic(
+            self, genre_id: str,
+            page: int, page_size: int, sort_field: str = "imdb_rating") -> Optional[list[FilmBase]]:
+        search_body = {
+                "_source": [
+                    "id",
+                    "title",
+                    "imdb_rating"
+                ],
+                "query": {
+                    "bool": {
+                        "should": [
+                            {
+                                "nested": {
+                                    "path": "genre",
+                                    "query": {
+                                        "term": {
+                                            "genre.id": genre_id
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        search_body.update(Paginator(page_size=page_size, page_number=page).get_paginate_body())
+        search_body.update(Sort(field=sort_field).get_sort_body())
         films = await self.elastic.search(
             index='movies',
             body=search_body
