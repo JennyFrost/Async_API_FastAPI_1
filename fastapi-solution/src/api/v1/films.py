@@ -4,9 +4,13 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from services.film import FilmService, get_film_service
 
+from typing import Optional
+
 from .api_models import Film, Genre, PersonBase, PageAnswer, FilmBase as FilmAnswer
 
 from models.film import FilmBase
+
+from core.config import PAGE_SIZE, SORT_FIELD
 
 router = APIRouter()
 
@@ -30,10 +34,9 @@ async def film_details(film_id: str, film_service: FilmService = Depends(get_fil
     )
 
 @router.get('/', response_model=PageAnswer)
-async def all_films(page: int, size: int=50, sort: str = "-imdb_rating",
-                    film_service: FilmService=Depends(get_film_service)) -> PageAnswer:
+async def all_films(page: int=1, size: int=PAGE_SIZE, sort: str = SORT_FIELD, genre: str=None,film_service: FilmService=Depends(get_film_service)) -> PageAnswer:
     # получаем список фильмов с определенного места определенного размера
-    films: list[FilmBase] = await film_service.get_films_page(page, size, sort)
+    films: list[FilmBase] = await film_service.get_films_page(page, size, sort, genre)
     page_model = PageAnswer(
         page_size=size,
         number_page=page,

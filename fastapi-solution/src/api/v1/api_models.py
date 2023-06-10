@@ -47,7 +47,7 @@ class PageAnswer(BaseModel):
 
 
 class Film(FilmBase):
-    description: str
+    description: Optional[str]
     creation_date: Optional[date] = None
     actors: Optional[list[PersonBase]] = []
     writers: Optional[list[PersonBase]] = []
