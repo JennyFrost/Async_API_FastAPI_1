@@ -77,12 +77,13 @@ class FilmService(CacheMixin):
     async def get_person_films(
             self, person_id: str,
             page_size: int,
-            page_number: int) -> Optional[list[FilmBase]]:
+            page_number: int,
+            sort_field: str) -> Optional[list[FilmBase]]:
         person_films = await self._objects_from_cache(
             f'person_films_page_{page_number}_size_{page_size}_' + person_id
         )
         if not person_films:
-            person_films = await self._get_person_films_from_elastic(person_id, page_number, page_size)
+            person_films = await self._get_person_films_from_elastic(person_id, page_number, page_size, sort_field)
             if not person_films:
                 return []
             await self._put_objects_to_cache(
@@ -99,7 +100,7 @@ class FilmService(CacheMixin):
 
     async def _get_person_films_from_elastic(
             self, person_id: str,
-            page: int, page_size: int, sort_field: str = "-imdb_rating") -> Optional[list[FilmBase]]:
+            page: int, page_size: int, sort_field: str) -> Optional[list[FilmBase]]:
         search_body = {
                 "_source": [
                     "id",
@@ -144,7 +145,8 @@ class FilmService(CacheMixin):
                 }
             }
         search_body.update(Paginator(page_size=page_size, page_number=page).get_paginate_body())
-        search_body.update(Sort(field=sort_field).get_sort_body())
+        print(sort_field)
+        search_body.update(Sort(sort_field=sort_field).get_sort_body())
         films = await self.elastic.search(
             index='movies',
             body=search_body

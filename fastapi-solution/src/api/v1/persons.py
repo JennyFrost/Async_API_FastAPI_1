@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from services.person import PersonService, get_person_service
 from services.film import FilmService, get_film_service
 from .api_models import Person, FilmBase
-from core.config import PAGE_SIZE
+from core.config import PAGE_SIZE, SORT_FIELD
 
 router = APIRouter()
 
@@ -35,9 +35,10 @@ async def person_films(
         person_id: str,
         page_number: int = 1,
         page_size: int = PAGE_SIZE,
+        sort: str = SORT_FIELD,
         film_service: FilmService = Depends(get_film_service)) -> list[FilmBase]:
     """получить список фильмов по конкретному персонажу"""
-    person_films = await film_service.get_person_films(person_id, page_size, page_number)
+    person_films = await film_service.get_person_films(person_id, page_size, page_number, sort)
     return [FilmBase(
         uuid=film.id,
         title=film.title,

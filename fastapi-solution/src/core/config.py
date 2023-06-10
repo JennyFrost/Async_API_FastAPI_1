@@ -7,7 +7,7 @@ logging_config.dictConfig(LOGGING)
 
 PROJECT_NAME = os.getenv('PROJECT_NAME', 'movies')
 
-REDIS_HOST = os.getenv('REDIS_HOST','127.0.0.1') #'212.113.106.95')
+REDIS_HOST = os.getenv('REDIS_HOST', '127.0.0.1') #'212.113.106.95')
 REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
 
 ELASTIC_HOST = os.getenv('ELASTIC_HOST', '127.0.0.1') #'212.113.106.95')
