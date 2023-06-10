@@ -106,7 +106,7 @@ class FilmService(CacheMixin):
             film = FilmBase.parse_raw(obj)
             return film
     
-    async def _objects_from_cache(self, some_id: str) -> list[FilmBase] | []:
+    async def _objects_from_cache(self, some_id: str) -> Optional[list[FilmBase]]:
         objects = await super()._objects_from_cache(some_id)
         films = [FilmBase.parse_raw(obj) for obj in objects]
         return films

@@ -33,7 +33,7 @@ class GenreService(CacheMixin):
             return None
         return [Genre(**genre['_source']) for genre in genres['hits']['hits']]
     
-    async def _objects_from_cache(self, some_id: str) -> list[Genre] | []:
+    async def _objects_from_cache(self, some_id: str) -> Optional[list[Genre]]:
         objects = await super()._objects_from_cache(some_id)
         genres = [Genre.parse_raw(obj) for obj in objects]
         return genres
