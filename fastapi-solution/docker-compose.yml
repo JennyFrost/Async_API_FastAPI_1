@@ -45,7 +45,7 @@ services:
       - 6379:6379
 
   elastic_start:
-      build: ./src/services/elastic_start
+      build: ./elastic_start
       container_name: elastic_start
       depends_on:
         - elastic
@@ -54,3 +54,15 @@ services:
       volumes:
         - ./index.json:/usr/src/app/index.json
         - ./dump_elastic.json:/usr/src/app/dump_elastic.json
+
+  fast_api:
+      build: ./src
+      container_name: fast_api
+      restart: always
+      depends_on:
+        - elastic
+        - redis
+      env_file:
+        - ./.env
+      ports:
+      - 8001:8000
