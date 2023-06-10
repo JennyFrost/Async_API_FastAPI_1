@@ -26,20 +26,21 @@ class FilmService(CacheMixin):
 
         return film
     
-    async def get_films_page(self, page: int, size: int):
+    async def get_films_page(self, page: int, size: int, sort_field: str):
         """
         Метод возвращает запрошенную страницу с фильмами, определенного размера
         """
         key_for_cache = f"films_page_{page}_size_{size}"
         page_films = await self._objects_from_cache(key_for_cache)
         if not page_films:
-            page_films = await self._get_films_from_elastic(page, size)
+            page_films = await self._get_films_from_elastic(page, size, sort_field)
             if not page_films:
                 return []
             await self._put_objects_to_cache(page_films, key_for_cache)
         return page_films
     
-    async def _get_films_from_elastic(self, page: int, size: int) -> Optional[list[FilmBase]]:
+    async def _get_films_from_elastic(self, page: int, size: int,
+                                      sort_field: str = "-imdb_rating") -> Optional[list[FilmBase]]:
         """
         Метод делает запрос в эластик и возвращает страницу (список объектов) с фильмами
         """
@@ -48,14 +49,9 @@ class FilmService(CacheMixin):
                     "title",
                     "imdb_rating"], 
                     "query": {"match_all": {}},
-                    "sort": [
-                        {
-                        "imdb_rating": {
-                            "order": "desc"
-                        }
-                        }]
                 }
         search_body.update(Paginator(page_size=size, page_number=page).get_paginate_body())
+        search_body.update(Sort(sort_field=sort_field).get_sort_body())
         films = await self.elastic.search(index='movies', body=search_body)
         objects_film = [FilmBase.parse_obj(film.get('_source')) for film in films['hits']['hits']]
         return objects_film
@@ -85,7 +81,7 @@ class FilmService(CacheMixin):
 
     async def _get_person_films_from_elastic(
             self, person_id: str,
-            page: int, page_size: int, sort_field: str = "imdb_rating") -> Optional[list[FilmBase]]:
+            page: int, page_size: int, sort_field: str = "-imdb_rating") -> Optional[list[FilmBase]]:
         search_body = {
                 "_source": [
                     "id",

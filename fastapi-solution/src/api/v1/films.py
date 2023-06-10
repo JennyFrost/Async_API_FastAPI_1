@@ -30,9 +30,10 @@ async def film_details(film_id: str, film_service: FilmService = Depends(get_fil
     )
 
 @router.get('/', response_model=PageAnswer)
-async def all_films(page: int, size: int=50, film_service: FilmService=Depends(get_film_service)) -> PageAnswer:
+async def all_films(page: int, size: int=50, sort: str = "-imdb_rating",
+                    film_service: FilmService=Depends(get_film_service)) -> PageAnswer:
     # получаем список фильмов с определенного места определенного размера
-    films: list[FilmBase] = await film_service.get_films_page(page, size)
+    films: list[FilmBase] = await film_service.get_films_page(page, size, sort)
     page_model = PageAnswer(
         page_size=size,
         number_page=page,
