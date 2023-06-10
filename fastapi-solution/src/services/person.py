@@ -7,23 +7,21 @@ from redis.asyncio import Redis
 
 from db.elastic import get_elastic
 from db.redis import get_redis
-from models.person import PersonBase, Role, Person, PersonFilm
+from models.person import Role, Person, PersonFilm
+from services.redis_mixins import CacheMixin
 
 PERSON_CACHE_EXPIRE_IN_SECONDS = 60 * 2
 
 
-class PersonService:
-    def __init__(self, redis: Redis, elastic: AsyncElasticsearch):
-        self.redis = redis
-        self.elastic = elastic
+class PersonService(CacheMixin):
 
     async def get_by_id(self, person_id: str) -> Optional[Person]:
-        person = await self._person_from_cache(person_id)
+        person = await self._object_from_cache(person_id)
         if not person:
             person = await self._get_person_from_elastic(person_id)
             if not person:
                 return None
-            await self._put_person_to_cache(person)
+            await self._put_object_to_cache(person, person_id)
         return person
 
     async def _get_person_from_elastic(self, person_id: str) -> Optional[Person]:
@@ -90,15 +88,11 @@ class PersonService:
             return None
         return person
 
-    async def _person_from_cache(self, person_id: str) -> Optional[Person]:
-        data = await self.redis.get(person_id)
-        if not data:
-            return None
-        person = Person.parse_raw(data)
-        return person
-
-    async def _put_person_to_cache(self, person: PersonBase):
-        await self.redis.set(person.uuid, person.json(), PERSON_CACHE_EXPIRE_IN_SECONDS)
+    async def _object_from_cache(self, some_id: str) -> Optional[Person]:
+        obj = await super()._object_from_cache(some_id)
+        if obj:
+            person = Person.parse_raw(obj)
+            return person
 
 
 @lru_cache()

@@ -1,6 +1,5 @@
 from functools import lru_cache
 from typing import Optional
-import json
 
 from elasticsearch import AsyncElasticsearch, NotFoundError
 from fastapi import Depends
@@ -34,14 +33,14 @@ class GenreService(CacheMixin):
             return None
         return [Genre(**genre['_source']) for genre in genres['hits']['hits']]
     
-    async def _objects_from_cache(self, some_id: str) -> Optional[dict]:
+    async def _objects_from_cache(self, some_id: str) -> list[Genre] | []:
         objects = await super()._objects_from_cache(some_id)
-        genres = [Genre.parse_raw(object) for object in objects]
+        genres = [Genre.parse_raw(obj) for obj in objects]
         return genres
     
-    async def _object_from_cache(self, some_id: str) -> Optional[str]:
-        object = await super()._object_from_cache(some_id)
-        genre = Genre.parse_raw(object)
+    async def _object_from_cache(self, some_id: str) -> Optional[Genre]:
+        obj = await super()._object_from_cache(some_id)
+        genre = Genre.parse_raw(obj)
         return genre
 
 

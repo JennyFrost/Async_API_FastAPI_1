@@ -1,11 +1,9 @@
-import json
 from functools import lru_cache
 from typing import Optional
 
 from elasticsearch import AsyncElasticsearch, NotFoundError
 from fastapi import Depends
 from redis.asyncio import Redis
-from pydantic import BaseModel
 
 from db.elastic import get_elastic
 from db.redis import get_redis
@@ -49,73 +47,69 @@ class FilmService(CacheMixin):
         films = await self.elastic.search(
             index='movies',
             body={
-                  "_source": ["id", "title", "imdb_rating"],
-                  "query": {
+                "_source": [
+                    "id",
+                    "title",
+                    "imdb_rating"
+                ],
+                "query": {
                     "bool": {
-                      "should": [
-                        {
-                          "nested": {
-                            "path": "actors",
-                            "query": {
-                              "term": {
-                                "actors.id": person_id
-                              }
+                        "should": [
+                            {
+                                "nested": {
+                                    "path": "actors",
+                                    "query": {
+                                        "term": {
+                                            "actors.id": person_id
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "nested": {
+                                    "path": "director",
+                                    "query": {
+                                        "term": {
+                                            "director.id": person_id
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "nested": {
+                                    "path": "writers",
+                                    "query": {
+                                        "term": {
+                                            "writers.id": person_id
+                                        }
+                                    }
+                                }
                             }
-                          }
-                        },
-                          {
-                              "nested": {
-                                  "path": "director",
-                                  "query": {
-                                      "term": {
-                                          "director.id": person_id
-                                      }
-                                  }
-                              }
-                          },
-                        {
-                          "nested": {
-                            "path": "writers",
-                            "query": {
-                              "term": {
-                                "writers.id": person_id
-                              }
-                            }
-                          }
-                        }
-                      ]
+                        ]
                     }
-                  },
-                    "sort": [
-                        {
-                            "imdb_rating": {
-                                "order": "desc"
-                            }
+                },
+                "sort": [
+                    {
+                        "imdb_rating": {
+                            "order": "desc"
                         }
-                    ]
-                }
+                    }
+                ]
+            }
         )
         films = [FilmBase(**film['_source']) for film in films['hits']['hits']]
         return films
 
-    async def _object_from_cache(self, some_id: str) -> Optional[str]:
-        object = await super()._object_from_cache(some_id)
-        if object:
-            film = FilmBase.parse_raw(object)
+    async def _object_from_cache(self, some_id: str) -> Optional[FilmBase]:
+        obj = await super()._object_from_cache(some_id)
+        if obj:
+            film = FilmBase.parse_raw(obj)
             return film
     
-    async def _objects_from_cache(self, some_id: str) -> Optional[dict]:
+    async def _objects_from_cache(self, some_id: str) -> list[FilmBase] | []:
         objects = await super()._objects_from_cache(some_id)
-        films = [FilmBase.parse_raw(object) for object in objects]
+        films = [FilmBase.parse_raw(obj) for obj in objects]
         return films
-    
-    # async def _genres_from_cache(self, some_id: str) -> Optional[list[Genre]]:
-    #     data = await self.redis.get(some_id)
-    #     if not data:
-    #         return None
-    #     objects = json.loads(data)
-    #     genres = [Genre.parse_raw(genre) for genre in genres]
-    #     return genres
 
 
 @lru_cache()
