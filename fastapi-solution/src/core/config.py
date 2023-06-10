@@ -16,3 +16,4 @@ ELASTIC_PORT = int(os.getenv('ELASTIC_PORT', 9200))
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 PAGE_SIZE = 20
+SORT_FIELD = "-imdb_rating"

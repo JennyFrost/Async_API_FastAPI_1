@@ -30,7 +30,7 @@ class FilmBase(BaseModel):
 
 
 class Film(FilmBase):
-    description: str
+    description: Optional[str]
     creation_date: Optional[date] = None
     genre: Optional[list[Genre]] = []
     actors: Optional[list[PersonBase]] = []
