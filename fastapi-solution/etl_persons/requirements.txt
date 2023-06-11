@@ -1,0 +1,5 @@
+elasticsearch[async]==7.9.1
+pydantic==1.9.0
+python-dotenv==1.0.0
+psycopg2==2.9.6
+elastic-transport==8.4.0
