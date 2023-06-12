@@ -1,5 +1,4 @@
 import json
-from typing import Optional
 from pydantic import BaseModel
 from redis.asyncio import Redis
 from elasticsearch import AsyncElasticsearch
@@ -14,13 +13,13 @@ class MainServiceMixin:
 
 class CacheMixin(MainServiceMixin):
 
-    async def _object_from_cache(self, some_id: str) -> Optional[bytes]:
+    async def _object_from_cache(self, some_id: str) -> bytes:
         data = await self.redis.get(some_id)
         if not data:
             return None
         return data
     
-    async def _objects_from_cache(self, some_id: str) -> Optional[list[str]]:
+    async def _objects_from_cache(self, some_id: str) -> list[str]:
         data = await self.redis.get(some_id)
         if not data:
             return []

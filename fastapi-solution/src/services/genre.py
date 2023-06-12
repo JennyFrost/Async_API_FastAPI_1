@@ -1,5 +1,4 @@
 from functools import lru_cache
-from typing import Optional
 
 from elasticsearch import AsyncElasticsearch, NotFoundError
 from fastapi import Depends
@@ -16,7 +15,7 @@ GENRES_CACHE_EXPIRE_IN_SECONDS = 60 * 5
 
 class GenreService(CacheMixin):
 
-    async def get_by_id(self, genre_id: str) -> Optional[Genre]:
+    async def get_by_id(self, genre_id: str) -> Genre | None:
         genre = await self._object_from_cache(genre_id)
         if not genre:
             genre = await self._get_genre_from_elastic(genre_id)
@@ -26,7 +25,7 @@ class GenreService(CacheMixin):
 
         return genre
 
-    async def get_genres_list(self, page: int, page_size: int) -> Optional[list[Genre]]:
+    async def get_genres_list(self, page: int, page_size: int) -> list[Genre]:
         genres = await self._objects_from_cache(f'all_genres_page_{page}_size_{page_size}')
         if not genres:
             genres = await self._get_genres_from_elastic(page, page_size)
@@ -35,14 +34,14 @@ class GenreService(CacheMixin):
             await self._put_objects_to_cache(genres, f'all_genres_page_{page}_size_{page_size}')
         return genres
 
-    async def _get_genre_from_elastic(self, genre_id: str) -> Optional[Genre]:
+    async def _get_genre_from_elastic(self, genre_id: str) -> Genre | None:
         try:
             doc = await self.elastic.get(index='genres', id=genre_id)
         except NotFoundError:
             return None
         return Genre(**doc['_source'])
 
-    async def _get_genres_from_elastic(self, page: int, page_size: int) -> Optional[list[Genre]]:
+    async def _get_genres_from_elastic(self, page: int, page_size: int) -> list[Genre]:
         try:
             search_body = {"query": {"match_all": {}}}
             search_body.update(Paginator(page_size=page_size, page_number=page).get_paginate_body())
@@ -51,15 +50,16 @@ class GenreService(CacheMixin):
             return None
         return [Genre(**genre['_source']) for genre in genres['hits']['hits']]
     
-    async def _objects_from_cache(self, some_id: str) -> Optional[list[Genre]]:
+    async def _objects_from_cache(self, some_id: str) -> list[Genre]:
         objects = await super()._objects_from_cache(some_id)
         genres = [Genre.parse_raw(obj) for obj in objects]
         return genres
     
-    async def _object_from_cache(self, some_id: str) -> Optional[Genre]:
+    async def _object_from_cache(self, some_id: str) -> Genre | None:
         obj = await super()._object_from_cache(some_id)
-        genre = Genre.parse_raw(obj)
-        return genre
+        if obj:
+            genre = Genre.parse_raw(obj)
+            return genre
 
 
 @lru_cache()

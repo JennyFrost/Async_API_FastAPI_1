@@ -1,5 +1,4 @@
 import orjson
-from typing import Optional
 from enum import Enum
 
 from pydantic import BaseModel
@@ -26,8 +25,8 @@ class PersonBase(BaseModel):
 
 class PersonFilm(BaseModel):
     uuid: str
-    roles: Optional[list[Role]] = []
+    roles: list[Role] = []
 
 
 class Person(PersonBase):
-    films: Optional[list[PersonFilm]] = []
+    films: list[PersonFilm] = []
