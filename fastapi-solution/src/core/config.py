@@ -1,19 +1,25 @@
 import os
+from pydantic import BaseSettings, Field
 from logging import config as logging_config
 
 from .logger import LOGGING
 
 logging_config.dictConfig(LOGGING)
 
-PROJECT_NAME = os.getenv('PROJECT_NAME', 'movies')
 
-REDIS_HOST = os.getenv('REDIS_HOST', '127.0.0.1') #'212.113.106.95')
-REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
+class Settings(BaseSettings):
+    redis_host: str = Field(..., env='REDIS_HOST')
+    redis_port: int = Field(..., env='REDIS_PORT')
+    elastic_host: str = Field(..., env='ELASTIC_HOST')
+    elastic_port: int = Field(..., env='ELASTIC_PORT')
+    project_name: str = Field(..., env='PROJECT_NAME')
+    base_dir: str = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    page_size: int = 20
+    sort_field: str = "-imdb_rating"
 
-ELASTIC_HOST = os.getenv('ELASTIC_HOST', '127.0.0.1') #'212.113.106.95')
-ELASTIC_PORT = int(os.getenv('ELASTIC_PORT', 9200))
+    class Config:
+        env_file = '.env.sample'
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-PAGE_SIZE = 20
-SORT_FIELD = "-imdb_rating"
+settings = Settings()
+
