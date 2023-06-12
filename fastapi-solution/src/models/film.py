@@ -1,31 +1,22 @@
-import orjson
 from datetime import date
 
-from pydantic import BaseModel
+from models.base_config import BaseOrjsonModel
 
 
-def orjson_dumps(v, *, default):
-    return orjson.dumps(v, default=default).decode()
-
-
-class PersonBase(BaseModel):
+class PersonBase(BaseOrjsonModel):
     id: str
     name: str
 
 
-class Genre(BaseModel):
+class Genre(BaseOrjsonModel):
     id: str
     name: str
 
 
-class FilmBase(BaseModel):
+class FilmBase(BaseOrjsonModel):
     id: str
     title: str
     imdb_rating: float | None
-
-    class Config:
-        json_loads = orjson.loads
-        json_dumps = orjson_dumps
 
 
 class Film(FilmBase):
