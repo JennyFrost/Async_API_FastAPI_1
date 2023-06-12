@@ -1,17 +1,20 @@
 from http import HTTPStatus
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from services.genre import GenreService, get_genres_service
 from .api_models import Genre
-from core.config import PAGE_SIZE
+from core.config import settings
+
+PAGE_SIZE = settings.page_size
 
 router = APIRouter()
 
 
 @router.get('/', response_model=list[Genre])
-async def list_genre(page_number: int = 1,
-                     page_size: int = PAGE_SIZE,
+async def list_genre(page_number: Annotated[int, Query(description='Pagination page number', ge=1, default=1)],
+                     page_size: Annotated[int, Query(description='Pagination page size', ge=1, default=PAGE_SIZE)],
                      genre_service: GenreService = Depends(get_genres_service)) -> list[Genre]:
     genres = await genre_service.get_genres_list(page_number, page_size)
     return [Genre(uuid=genre.uuid, name=genre.name) for genre in genres]

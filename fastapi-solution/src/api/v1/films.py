@@ -1,29 +1,30 @@
 from http import HTTPStatus
-
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Annotated
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from services.film import FilmService, get_film_service
-
-from typing import Optional
-
 from .api_models import Film, Genre, PersonBase, PageAnswer, FilmBase as FilmAnswer
-
 from models.film import FilmBase
+from core.config import settings
 
-from core.config import PAGE_SIZE, SORT_FIELD
+PAGE_SIZE = settings.page_size
+SORT_FIELD = settings.sort_field
 
 router = APIRouter()
 
 
 @router.get('/search', response_model=PageAnswer)
-async def query_films(query: str, page: int=1, size: int=PAGE_SIZE, film_service: FilmService=Depends(get_film_service)) -> PageAnswer:
+async def query_films(query: str,
+                      page_number: Annotated[int, Query(description='Pagination page number', ge=1, default=1)],
+                      page_size: Annotated[int, Query(description='Pagination page size', ge=1, default=PAGE_SIZE)],
+                      film_service: FilmService = Depends(get_film_service)) -> PageAnswer:
     """
     Метод получает список фильмов по запросу
     """
-    films: list[FilmBase] = await film_service.get_films_query(page, size, query)
+    films: list[FilmBase] = await film_service.get_films_query(page_number, page_size, query)
     page_model = PageAnswer(
-        page_size=size,
-        number_page=page,
+        page_size=page_size,
+        number_page=page_number,
         amount_elements=len(films),
         result=[FilmAnswer.parse_obj(film_obj.dict()) for film_obj in films]
     )
@@ -48,13 +49,17 @@ async def film_details(film_id: str, film_service: FilmService = Depends(get_fil
         genre=[Genre(name=i.name, uuid=i.id) for i in film.genre],
     )
 
+
 @router.get('/', response_model=PageAnswer)
-async def all_films(page: int=1, size: int=PAGE_SIZE, sort: str = SORT_FIELD, genre: str=None,film_service: FilmService=Depends(get_film_service)) -> PageAnswer:
+async def all_films(page_number: Annotated[int, Query(description='Pagination page number', ge=1, default=1)],
+                    page_size: Annotated[int, Query(description='Pagination page size', ge=1, default=PAGE_SIZE)],
+                    sort: str = SORT_FIELD,
+                    genre: str = None, film_service: FilmService= Depends(get_film_service)) -> PageAnswer:
     # получаем список фильмов с определенного места определенного размера
-    films: list[FilmBase] = await film_service.get_films_page(page, size, sort, genre)
+    films: list[FilmBase] = await film_service.get_films_page(page_number, page_size, sort, genre)
     page_model = PageAnswer(
-        page_size=size,
-        number_page=page,
+        page_size=page_size,
+        number_page=page_number,
         amount_elements=len(films),
         result=[FilmAnswer.parse_obj(film_obj.dict()) for film_obj in films]
     )
