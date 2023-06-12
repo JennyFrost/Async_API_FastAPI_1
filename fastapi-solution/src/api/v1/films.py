@@ -4,8 +4,6 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from services.film import FilmService, get_film_service
 
-from typing import Optional
-
 from .api_models import Film, Genre, PersonBase, PageAnswer, FilmBase as FilmAnswer
 
 from models.film import FilmBase

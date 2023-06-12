@@ -1,6 +1,5 @@
 import re
 from functools import lru_cache
-from typing import Optional
 
 from elasticsearch import AsyncElasticsearch, NotFoundError
 from fastapi import Depends
@@ -17,7 +16,7 @@ FILM_CACHE_EXPIRE_IN_SECONDS = 60 * 5
 
 class FilmService(CacheMixin):
 
-    async def get_by_id(self, film_id: str) -> Optional[Film]:
+    async def get_by_id(self, film_id: str) -> Film | None:
         film = await self._object_from_cache(film_id)
         if not film:
             film = await self._get_film_from_elastic(film_id)
@@ -26,7 +25,7 @@ class FilmService(CacheMixin):
             await self._put_object_to_cache(film, film_id)
         return film
     
-    async def get_films_query(self, page: int, page_size: int, query: str) -> Optional[list[FilmBase]]:
+    async def get_films_query(self, page: int, page_size: int, query: str) -> list[FilmBase]:
         key_for_cache = f"films_page_{page}_size_{page_size}_query_{query}"
         films = await self._objects_from_cache(key_for_cache)
         if not films:
@@ -72,7 +71,7 @@ class FilmService(CacheMixin):
         return page_films
     
     async def _get_films_from_elastic(self, page: int, size: int,
-                                      sort_field: str, genre: str) -> Optional[list[FilmBase]]:
+                                      sort_field: str, genre: str) -> list[FilmBase]:
         """
         Метод делает запрос в эластик и возвращает страницу (список объектов) с фильмами
         """
@@ -110,7 +109,7 @@ class FilmService(CacheMixin):
             self, person_id: str,
             page_size: int,
             page_number: int,
-            sort_field: str) -> Optional[list[FilmBase]]:
+            sort_field: str) -> list[FilmBase]:
         person_films = await self._objects_from_cache(
             f'person_films_page_{page_number}_size_{page_size}_' + person_id
         )
@@ -123,7 +122,7 @@ class FilmService(CacheMixin):
                 f'person_films_page_{page_number}_size_{page_size}_' + person_id)
         return person_films
 
-    async def _get_film_from_elastic(self, film_id: str) -> Optional[Film]:
+    async def _get_film_from_elastic(self, film_id: str) -> Film | None:
         try:
             doc = await self.elastic.get(index='movies', id=film_id)
         except NotFoundError:
@@ -132,7 +131,7 @@ class FilmService(CacheMixin):
 
     async def _get_person_films_from_elastic(
             self, person_id: str,
-            page: int, page_size: int, sort_field: str) -> Optional[list[FilmBase]]:
+            page: int, page_size: int, sort_field: str) -> list[FilmBase]:
         search_body = {
                 "_source": [
                     "id",
@@ -186,13 +185,13 @@ class FilmService(CacheMixin):
         films = [FilmBase(**film['_source']) for film in films['hits']['hits']]
         return films
 
-    async def _object_from_cache(self, some_id: str) -> Optional[FilmBase]:
+    async def _object_from_cache(self, some_id: str) -> FilmBase | None:
         obj = await super()._object_from_cache(some_id)
         if obj:
             film = FilmBase.parse_raw(obj)
             return film
     
-    async def _objects_from_cache(self, some_id: str) -> Optional[list[FilmBase]]:
+    async def _objects_from_cache(self, some_id: str) -> list[FilmBase]:
         objects = await super()._objects_from_cache(some_id)
         films = [FilmBase.parse_raw(obj) for obj in objects]
         return films

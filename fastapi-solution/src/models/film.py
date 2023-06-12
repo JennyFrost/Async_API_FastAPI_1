@@ -1,6 +1,5 @@
 import orjson
 from datetime import date
-from typing import Optional
 
 from pydantic import BaseModel
 
@@ -22,7 +21,7 @@ class Genre(BaseModel):
 class FilmBase(BaseModel):
     id: str
     title: str
-    imdb_rating: Optional[float]
+    imdb_rating: float | None
 
     class Config:
         json_loads = orjson.loads
@@ -30,9 +29,9 @@ class FilmBase(BaseModel):
 
 
 class Film(FilmBase):
-    description: Optional[str]
-    creation_date: Optional[date] = None
-    genre: Optional[list[Genre]] = []
-    actors: Optional[list[PersonBase]] = []
-    writers: Optional[list[PersonBase]] = []
-    director: Optional[list[PersonBase]] = []
+    description: str | None
+    creation_date: date | None = None
+    genre: list[Genre] | None = []
+    actors: list[PersonBase] | None = []
+    writers: list[PersonBase] | None = []
+    director: list[PersonBase] | None = []

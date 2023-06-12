@@ -1,6 +1,5 @@
 import re
 from functools import lru_cache
-from typing import Optional
 
 from elasticsearch import AsyncElasticsearch, NotFoundError
 from fastapi import Depends
@@ -18,7 +17,7 @@ class PersonService(CacheMixin):
 
     async def search_person(
             self, search_text: str,
-            page: int, page_size: int) -> Optional[list[Person]]:
+            page: int, page_size: int) -> list[Person]:
         persons = await self._objects_from_cache('search_person_' + search_text)
         if not persons:
             text = re.sub(' +', '~ ', search_text.rstrip()).rstrip() + '~'
@@ -28,7 +27,7 @@ class PersonService(CacheMixin):
             await self._put_objects_to_cache(persons, 'search_person_' + search_text)
         return persons
 
-    async def get_by_id(self, person_id: str) -> Optional[Person]:
+    async def get_by_id(self, person_id: str) -> Person | None:
         person = await self._object_from_cache(person_id)
         if not person:
             person = await self._get_person_from_elastic(person_id)
@@ -37,7 +36,7 @@ class PersonService(CacheMixin):
             await self._put_object_to_cache(person, person_id)
         return person
 
-    async def _get_person_from_elastic(self, person_id: str) -> Optional[Person]:
+    async def _get_person_from_elastic(self, person_id: str) -> Person | None:
         try:
             doc = await self.elastic.get(index='persons', id=person_id)
             person = Person(**doc['_source'])
@@ -48,7 +47,7 @@ class PersonService(CacheMixin):
 
     async def _search_person_from_elastic(
             self, search_text: str,
-            page: int, page_size: int) -> Optional[list[Person]]:
+            page: int, page_size: int) -> list[Person]:
         search_body = {
                 "query": {
                     "query_string": {
@@ -69,7 +68,7 @@ class PersonService(CacheMixin):
             result.append(person)
         return result
 
-    async def _get_person_roles_from_elastic(self, person: Person) -> Optional[Person]:
+    async def _get_person_roles_from_elastic(self, person: Person) -> Person | None:
         films = await self.elastic.search(
             index='movies',
             body={
@@ -127,13 +126,13 @@ class PersonService(CacheMixin):
             person.films.append(person_film)
         return person
 
-    async def _object_from_cache(self, some_id: str) -> Optional[Person]:
+    async def _object_from_cache(self, some_id: str) -> Person | None:
         obj = await super()._object_from_cache(some_id)
         if obj:
             person = Person.parse_raw(obj)
             return person
 
-    async def _objects_from_cache(self, some_id: str) -> Optional[list[Person]]:
+    async def _objects_from_cache(self, some_id: str) -> list[Person]:
         objects = await super()._objects_from_cache(some_id)
         persons = [Person.parse_raw(obj) for obj in objects]
         return persons
