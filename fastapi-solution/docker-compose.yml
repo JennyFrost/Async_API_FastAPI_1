@@ -6,7 +6,7 @@ services:
     container_name: postgres_elastic
     restart: always
     env_file:
-      - ./.env.db
+      - ./.env.db.sample
     volumes:
       - ./movies_db.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
@@ -50,7 +50,7 @@ services:
       depends_on:
         - elastic
       env_file:
-        - ./.env
+        - ./.env.sample
       volumes:
         - ./index.json:/usr/src/app/index.json
         - ./dump_elastic.json:/usr/src/app/dump_elastic.json
@@ -63,7 +63,7 @@ services:
         - elastic
         - redis
       env_file:
-        - ./.env
+        - ./.env.sample
       expose:
       - 8000
 
