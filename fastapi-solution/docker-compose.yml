@@ -9,8 +9,8 @@ services:
       - ./.env.db.sample
     volumes:
       - ./movies_db.sql:/docker-entrypoint-initdb.d/init.sql
-    ports:
-      - 5438:5432
+    expose:
+      - 5432
 
   etl_genre:
     container_name: etl_genre
@@ -34,15 +34,15 @@ services:
       xpack.security.enabled: 'false'
       ES_JAVA_OPTS: -Xms600m -Xmx600m
       discovery.type: single-node
-    ports:
-      - 9200:9200
+    expose:
+      - 9200
 
   redis:
     image: redis:6.2-alpine
     container_name: redis
     restart: always
-    ports:
-      - 6379:6379
+    expose:
+      - 6379
 
   elastic_start:
       build: ./elastic_start

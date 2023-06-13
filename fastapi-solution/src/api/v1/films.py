@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from services.film import FilmService, get_film_service
+
 from .api_models import Film, Genre, PersonBase, PageAnswer, FilmBase as FilmAnswer
 from models.film import FilmBase
 from core.config import settings

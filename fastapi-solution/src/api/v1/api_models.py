@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from typing import Optional
 from datetime import date
 
 from models.person import Role
@@ -7,7 +6,7 @@ from models.person import Role
 
 class PersonFilm(BaseModel):
     uuid: str
-    roles: Optional[list[Role]] = []
+    roles: list[Role] | None = []
 
 
 class PersonBase(BaseModel):
@@ -16,7 +15,7 @@ class PersonBase(BaseModel):
 
 
 class Person(PersonBase):
-    films: Optional[list[PersonFilm]] = []
+    films: list[PersonFilm] | None = []
 
 
 class Genre(BaseModel):
@@ -27,7 +26,7 @@ class Genre(BaseModel):
 class FilmBase(BaseModel):
     uuid: str
     title: str
-    imdb_rating: Optional[float]
+    imdb_rating: float | None
 
     @classmethod
     def parse_obj(cls, obj: dict):
@@ -43,13 +42,13 @@ class PageAnswer(BaseModel):
     page_size: int
     number_page: int
     amount_elements: int 
-    result: Optional[list[FilmBase]] = []
+    result: list[FilmBase] | None = []
 
 
 class Film(FilmBase):
-    description: Optional[str]
-    creation_date: Optional[date] = None
-    actors: Optional[list[PersonBase]] = []
-    writers: Optional[list[PersonBase]] = []
-    directors: Optional[list[PersonBase]] = []
-    genre: Optional[list[Genre]] = []
+    description: str | None
+    creation_date: date | None = None
+    actors: list[PersonBase] | None = []
+    writers: list[PersonBase] | None = []
+    directors: list[PersonBase] | None = []
+    genre: list[Genre] | None = []

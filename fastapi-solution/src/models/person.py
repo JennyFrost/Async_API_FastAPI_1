@@ -1,13 +1,6 @@
-import orjson
-from typing import Optional
 from enum import Enum
 
-from pydantic import BaseModel
-
-
-def orjson_dumps(v, *, default):
-    return orjson.dumps(v, default=default).decode()
-
+from models.base_config import BaseOrjsonModel
 
 class Role(Enum):
     actor = 'actor'
@@ -15,19 +8,15 @@ class Role(Enum):
     director = 'director'
 
 
-class PersonBase(BaseModel):
+class PersonBase(BaseOrjsonModel):
     uuid: str
     full_name: str
 
-    class Config:
-        json_loads = orjson.loads
-        json_dumps = orjson_dumps
 
-
-class PersonFilm(BaseModel):
+class PersonFilm(BaseOrjsonModel):
     uuid: str
-    roles: Optional[list[Role]] = []
+    roles: list[Role] = []
 
 
 class Person(PersonBase):
-    films: Optional[list[PersonFilm]] = []
+    films: list[PersonFilm] = []
