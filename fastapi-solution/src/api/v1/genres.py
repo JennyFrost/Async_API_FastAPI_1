@@ -13,8 +13,8 @@ router = APIRouter()
 
 
 @router.get('/', response_model=list[Genre])
-async def list_genre(page_number: Annotated[int, Query(description='Pagination page number', ge=1, default=1)],
-                     page_size: Annotated[int, Query(description='Pagination page size', ge=1, default=PAGE_SIZE)],
+async def list_genre(page_number: Annotated[int, Query(description='Pagination page number', ge=1)] = 1,
+                     page_size: Annotated[int, Query(description='Pagination page size', ge=1)] = PAGE_SIZE,
                      genre_service: GenreService = Depends(get_genres_service)) -> list[Genre]:
     genres = await genre_service.get_genres_list(page_number, page_size)
     return [Genre(uuid=genre.uuid, name=genre.name) for genre in genres]

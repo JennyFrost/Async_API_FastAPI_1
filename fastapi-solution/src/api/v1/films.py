@@ -16,8 +16,8 @@ router = APIRouter()
 
 @router.get('/search', response_model=PageAnswer)
 async def query_films(query: str,
-                      page_number: Annotated[int, Query(description='Pagination page number', ge=1, default=1)],
-                      page_size: Annotated[int, Query(description='Pagination page size', ge=1, default=PAGE_SIZE)],
+                      page_number: Annotated[int, Query(description='Pagination page number', ge=1)] = 1,
+                      page_size: Annotated[int, Query(description='Pagination page size', ge=1)] = PAGE_SIZE,
                       film_service: FilmService = Depends(get_film_service)) -> PageAnswer:
     """
     Метод получает список фильмов по запросу
@@ -52,8 +52,8 @@ async def film_details(film_id: str, film_service: FilmService = Depends(get_fil
 
 
 @router.get('/', response_model=PageAnswer)
-async def all_films(page_number: Annotated[int, Query(description='Pagination page number', ge=1, default=1)],
-                    page_size: Annotated[int, Query(description='Pagination page size', ge=1, default=PAGE_SIZE)],
+async def all_films(page_number: Annotated[int, Query(description='Pagination page number', ge=1)] = 1,
+                     page_size: Annotated[int, Query(description='Pagination page size', ge=1)] = PAGE_SIZE,
                     sort: str = SORT_FIELD,
                     genre: str = None, film_service: FilmService= Depends(get_film_service)) -> PageAnswer:
     # получаем список фильмов с определенного места определенного размера

@@ -17,8 +17,8 @@ router = APIRouter()
 @router.get('/search', response_model=list[Person])
 async def search_person(
         query: str,
-        page_number: Annotated[int, Query(description='Pagination page number', ge=1, default=1)],
-        page_size: Annotated[int, Query(description='Pagination page size', ge=1, default=PAGE_SIZE)],
+        page_number: Annotated[int, Query(description='Pagination page number', ge=1)] = 1,
+        page_size: Annotated[int, Query(description='Pagination page size', ge=1)] = PAGE_SIZE,
         person_service: PersonService = Depends(get_person_service)) -> list[Person]:
     """поиск персонажа по имени"""
     persons = await person_service.search_person(query, page_number, page_size)
@@ -37,8 +37,8 @@ async def person_details(person_id: str, person_service: PersonService = Depends
 @router.get('/{person_id}/films', response_model=list[FilmBase])
 async def person_films(
         person_id: str,
-        page_number: Annotated[int, Query(description='Pagination page number', ge=1, default=1)],
-        page_size: Annotated[int, Query(description='Pagination page size', ge=1, default=PAGE_SIZE)],
+        page_number: Annotated[int, Query(description='Pagination page number', ge=1)] = 1,
+        page_size: Annotated[int, Query(description='Pagination page size', ge=1)] = PAGE_SIZE,
         sort: str = SORT_FIELD,
         film_service: FilmService = Depends(get_film_service)) -> list[FilmBase]:
     """получить список фильмов по конкретному персонажу"""
