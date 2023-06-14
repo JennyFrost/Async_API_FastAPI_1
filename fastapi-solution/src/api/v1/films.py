@@ -20,7 +20,9 @@ async def query_films(query: str,
                       page_size: Annotated[int, Query(description='Pagination page size', ge=1)] = PAGE_SIZE,
                       film_service: FilmService = Depends(get_film_service)) -> PageAnswer:
     """
-    Метод получает список фильмов по запросу
+    Метод возвращает список фильмов по поисковому запросу 
+
+     - **query**: параметр поиска, поиск производится по названию фильма
     """
     films: list[FilmBase] = await film_service.get_films_query(page_number, page_size, query)
     page_model = PageAnswer(
@@ -34,6 +36,9 @@ async def query_films(query: str,
 
 @router.get('/{film_id}', response_model=Film)
 async def film_details(film_id: str, film_service: FilmService = Depends(get_film_service)) -> Film:
+    """
+    Метод возвращает информацию об одном фильме по **film_id**
+    """
     film = await film_service.get_by_id(film_id)
     if not film:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='film not found')
@@ -56,7 +61,12 @@ async def all_films(page_number: Annotated[int, Query(description='Pagination pa
                      page_size: Annotated[int, Query(description='Pagination page size', ge=1)] = PAGE_SIZE,
                     sort: str = SORT_FIELD,
                     genre: str = None, film_service: FilmService= Depends(get_film_service)) -> PageAnswer:
-    # получаем список фильмов с определенного места определенного размера
+    """
+    Метод возвращает список фильмов
+
+     - **sort**: параметр сортировки, по умолчанию сортировка идет по полю **rating** по убыванию
+     - **genre**: опционально можно отфильтровать фильмы по полю жанры 
+    """
     films: list[FilmBase] = await film_service.get_films_page(page_number, page_size, sort, genre)
     page_model = PageAnswer(
         page_size=page_size,
