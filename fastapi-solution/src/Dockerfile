@@ -15,6 +15,4 @@ RUN  pip install --upgrade pip \
 
 COPY . .
 
-EXPOSE 8000
-
 CMD gunicorn -w 4 -k uvicorn.workers.UvicornH11Worker -b 0.0.0.0:8000 main:app
