@@ -2,13 +2,14 @@ import json
 from pydantic import BaseModel
 from redis.asyncio import Redis
 from elasticsearch import AsyncElasticsearch
+from elastic_class import ElasticMain
 
 
 class MainServiceMixin:
 
-    def __init__(self, redis: Redis, elastic: AsyncElasticsearch):
+    def __init__(self, redis: Redis, elastic_main: ElasticMain):
         self.redis = redis
-        self.elastic = elastic
+        self.elastic_main = elastic_main
 
 
 class CacheMixin(MainServiceMixin):

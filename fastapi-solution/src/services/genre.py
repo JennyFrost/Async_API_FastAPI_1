@@ -7,6 +7,7 @@ from redis.asyncio import Redis
 from db.elastic import get_elastic
 from db.redis import get_redis
 from models.genre import Genre
+from elastic_class import ElasticMain
 
 from services.redis_mixins import CacheMixin, Paginator
 
@@ -18,7 +19,7 @@ class GenreService(CacheMixin):
     async def get_by_id(self, genre_id: str) -> Genre | None:
         genre = await self._object_from_cache(genre_id)
         if not genre:
-            genre = await self._get_genre_from_elastic(genre_id)
+            genre = await self.elastic_main.get_obj_from_elastic(genre_id, "genres", Genre)
             if not genre:
                 return None
             await self._put_object_to_cache(genre, genre_id)
@@ -67,4 +68,7 @@ def get_genres_service(
         redis: Redis = Depends(get_redis),
         elastic: AsyncElasticsearch = Depends(get_elastic),
 ) -> GenreService:
-    return GenreService(redis, elastic)
+    
+    elastic_main: ElasticMain = ElasticMain(elastic)
+
+    return GenreService(redis, elastic_main)

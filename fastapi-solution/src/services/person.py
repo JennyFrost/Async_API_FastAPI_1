@@ -9,6 +9,7 @@ from db.elastic import get_elastic
 from db.redis import get_redis
 from models.person import Role, Person, PersonFilm
 from services.redis_mixins import CacheMixin, Paginator
+from elastic_class import ElasticMain
 
 PERSON_CACHE_EXPIRE_IN_SECONDS = 60 * 2
 
@@ -30,7 +31,7 @@ class PersonService(CacheMixin):
     async def get_by_id(self, person_id: str) -> Person | None:
         person = await self._object_from_cache(person_id)
         if not person:
-            person = await self._get_person_from_elastic(person_id)
+            person = await self.elastic_main.get_obj_from_elastic(person_id, "persons", Person)
             if not person:
                 return None
             await self._put_object_to_cache(person, person_id)
@@ -143,4 +144,7 @@ def get_person_service(
         redis: Redis = Depends(get_redis),
         elastic: AsyncElasticsearch = Depends(get_elastic),
 ) -> PersonService:
-    return PersonService(redis, elastic)
+    
+    elastic_main: ElasticMain = ElasticMain(elastic)
+
+    return PersonService(redis, elastic_main)
